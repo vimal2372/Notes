@@ -1,0 +1,122 @@
+//Injecting a method
+
+            var classDeclaration = root.DescendantNodes()
+                                 .OfType<ClassDeclarationSyntax>().FirstOrDefault();
+
+            var mainDeclaration2 = root.DescendantNodes()
+                       .OfType<MethodDeclarationSyntax>()
+                       .Where(n => n.Identifier.ValueText == "Sum").ToList();
+
+             root = root.TrackNodes(classDeclaration);
+            SyntaxNode currentNode1 = root.GetCurrentNode(classDeclaration);
+
+            root = root.InsertNodesAfter(currentNode1.ChildNodes().OfType<MethodDeclarationSyntax>().Last(), mainDeclaration2);
+            Console.WriteLine(root.GetText());
+
+
+
+
+
+
+
+//entire program
+
+const string programText =
+                        @"using System;
+                        using System.Collections;
+                        using System.Linq;
+                        using System.Text;
+
+                        namespace HelloWorld
+                        {
+                            class Program
+                            {
+                                static void Main(string[] args)
+                                {
+                                    Console.WriteLine(""Hello, World!"");
+                                }
+                            }
+                        }";
+
+                    //replace using statement
+
+                    NameSyntax name = IdentifierName("System");
+                    Console.WriteLine($"\tCreated the identifier {name}");
+                    name = QualifiedName(name, IdentifierName("Collections"));
+                    Console.WriteLine(name.ToString());
+                    name = QualifiedName(name, IdentifierName("Generic"));
+                    Console.WriteLine(name.ToString());
+
+                    SyntaxTree tree = CSharpSyntaxTree.ParseText(programText);
+                    CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+                    Console.WriteLine($"The tree is a {root.Kind()} node.");
+                    var oldUsing = root.Usings[1];
+                    var newUsing = oldUsing.WithName(name);
+                    Console.WriteLine(root.ToString());
+                    root = root.ReplaceNode(oldUsing, newUsing);
+                    Console.WriteLine(root.GetText());
+
+                    ///Replace Method
+                    const string programText1 =
+                        @"using System;
+                        using System.Collections;
+                        using System.Linq;
+                        using System.Text;
+
+                        namespace HelloWorld
+                        {
+                            class Program
+                            {
+                                static void master(string[] args)
+                                {
+                                    Console.WriteLine(""HELLO VIMAL HOW ARE YOU DOING."");
+                                }
+                            }
+                        }";
+                    SyntaxTree tree1 = CSharpSyntaxTree.ParseText(programText1);
+
+                    CompilationUnitSyntax root1 = tree1.GetCompilationUnitRoot();
+
+                    MethodDeclarationSyntax mainDeclaration1 = root1.DescendantNodes()
+                    .OfType<MethodDeclarationSyntax>()
+                    .FirstOrDefault();
+
+                    var mainDeclaration = root.DescendantNodes()
+                    .OfType<MethodDeclarationSyntax>()
+                    .FirstOrDefault();
+
+                    root = root.ReplaceNode(mainDeclaration, mainDeclaration1);
+                    Console.WriteLine(root.GetText());
+
+                    var removedStatement = root.Usings[1];
+
+                    root = root.RemoveNode(removedStatement, SyntaxRemoveOptions.KeepNoTrivia);
+                    Console.WriteLine(root.GetText());
+
+                    webBuilder.UseStartup<Startup>();
+
+
+
+
+//method by name using Linq statement.
+
+                    /*var mainDeclaration = from methodDeclaration in root.DescendantNodes()
+                                        .OfType<MethodDeclarationSyntax>()
+                                          where methodDeclaration.Identifier.ValueText == "Main"
+                                          select methodDeclaration.;*/
+
+
+
+//Remove Variable Declaration statement  using manual traversal
+
+                    /*MemberDeclarationSyntax firstMember = root.Members[0];
+                    var namespaceDeclaration = (NamespaceDeclarationSyntax)firstMember;
+                    var classDeclaration = (ClassDeclarationSyntax)namespaceDeclaration.Members[0];
+                    var firstStatementDeclaration = classDeclaration.Members[0];*/
+
+
+
+
+//Get all nodes and see demo in add watch to check the type of node and other identity.
+
+var demo = root.DescendantNodes().ToList();

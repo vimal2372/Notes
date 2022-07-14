@@ -1,0 +1,309 @@
+Remove syntax VB.NET
+
+using System;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using System.Linq;
+using System.IO;
+
+namespace RemoveSyntaxVB
+{
+    public static class Test
+    {
+        public static void Task2(string removingText, string content)
+        {
+                if (removingText == null || content == null)
+                {
+                    Console.WriteLine("either removing_syntax or syntax_name is null");
+                    return;
+                }
+
+                //Getting entire content of Sample file and store to string
+                string programText = File.ReadAllText(@"VB_ProgramSample1.txt");
+
+                if (programText == null)
+                {
+                    Console.WriteLine("nothing iside the demo class");
+                    return;
+                }
+
+                //Creating SyntaxTree and getting CompilationUnitSyntax of SyntaxTree
+                SyntaxTree tree = VisualBasicSyntaxTree.ParseText(programText);
+                CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+
+                //Creating a demo class and inject input string 
+                string removingSyntax = @removingText;
+                string programText1 = @Constants.demoClassContent1 + "\n" + removingSyntax + "\n" +
+                                      Constants.demoClassContent2;
+
+                //Creating SyntaxTree of Demo class and getting CompilationUnitSyntax of SyntaxTree
+                SyntaxTree tree1 = VisualBasicSyntaxTree.ParseText(programText1);
+                CompilationUnitSyntax root1 = tree1.GetCompilationUnitRoot();
+
+                Console.WriteLine("-------------BEFORE OPERATION-------------");
+                Console.WriteLine(root.ToString());
+                
+                // Remove Simple Statement 
+                if (content == Constants.syntax1)
+                {
+                    //Fethching the PropertyStatementSyntax node(demo class) from
+                    //SyntaxTree using CompilationUnitSyntax which has to be compared
+                    var subject = root1.DescendantNodes()
+                              .OfType<PropertyStatementSyntax>().FirstOrDefault();
+                    if (subject == null)
+                    {
+                        throw new EntryPointNotFoundException();
+                    }
+
+                    //Fethching the PropertyStatementSyntax node from
+                    //SyntaxTree using CompilationUnitSyntax which has to be remove with help of node Subject by comparing
+                    var remove = root.DescendantNodes()
+                               .OfType<PropertyStatementSyntax>()
+                               .Where(n => n.Identifier.ValueText == subject.Identifier.ValueText).FirstOrDefault();
+                    if (remove == null)
+                    {
+                        throw new EntryPointNotFoundException();
+                    }
+                    root = root.RemoveNode(remove, SyntaxRemoveOptions.KeepNoTrivia);
+                }
+                
+                // Remove Local Variable 
+                if (content == Constants.syntax2)
+                {
+                    //Fethching the LocalDeclarationStatementSyntax node(demo class) from
+                    //SyntaxTree using CompilationUnitSyntax which has to be compared
+                    var subject = root1.DescendantNodes()
+                              .OfType<LocalDeclarationStatementSyntax>().FirstOrDefault();
+                    if (subject == null)
+                    {
+                        throw new EntryPointNotFoundException();
+                    }
+
+                    //Fethching the LocalDeclarationStatementSyntax node from
+                    //SyntaxTree using CompilationUnitSyntax which has to be remove with help of node Subject by comparing
+                    var remove = root.DescendantNodes()
+
+                             //LHS fetching the identifier name from list of
+                             //VariableDeclaratorSyntax and  ModifiedIdentifierSyntax
+                             .OfType<LocalDeclarationStatementSyntax>()
+                             .Where(n => n.ChildNodes()
+                             .OfType<VariableDeclaratorSyntax>().FirstOrDefault()
+                             .ChildNodes()
+                             .OfType<ModifiedIdentifierSyntax>().FirstOrDefault()
+                             .Identifier.ValueText
+                             ==
+                             //RHS fetching the identifier name from list of
+                             //VariableDeclaratorSyntax and  ModifiedIdentifierSyntax from subject node
+                             subject.ChildNodes()
+                             .OfType<VariableDeclaratorSyntax>().FirstOrDefault()
+                             .ChildNodes()
+                             .OfType<ModifiedIdentifierSyntax>().FirstOrDefault()
+                             .Identifier.ValueText).FirstOrDefault();
+                    if (remove == null)
+                    {
+                        throw new EntryPointNotFoundException();
+                    }
+                    root = root.RemoveNode(remove, SyntaxRemoveOptions.AddElasticMarker);
+                }
+                
+                // Remove for loop
+                if (content == Constants.syntax3)
+                {
+                    //Fethching the ForBlockSyntax node(demo class) from
+                    //SyntaxTree using CompilationUnitSyntax which has to be compared
+                    var subject = root1.DescendantNodes()
+                              .OfType<ForBlockSyntax>().FirstOrDefault();
+                    if (subject == null)
+                    {
+                        throw new EntryPointNotFoundException();
+                    }
+
+                    //Fethching the ForBlockSyntax List of node from
+                    //SyntaxTree using CompilationUnitSyntax
+                    var removeList = root.DescendantNodes()
+                                 .OfType<ForBlockSyntax>().ToList();
+                    if (removeList.Count == 0)
+                    {
+                        throw new EntryPointNotFoundException();
+                    }
+
+                    //Fethching the ForBlockSyntax node from ForBlockSyntax List
+                    // which has to be remove with help of node Subject by comparing
+                    //and removing node from SyntaxTree
+                    foreach (var item in removeList)
+                    {
+                        try
+                        {
+                            if (item.ToString() == subject.ToString())
+                            {
+                                root = root.RemoveNode(item, SyntaxRemoveOptions.KeepNoTrivia);
+                                break;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                        Console.WriteLine("Exception occurred: "+e);
+                        }
+                    
+                    }
+
+                }
+
+                //Remove if else 
+                if (content == Constants.syntax4)
+                {
+                    //Fethching the MultiLineIfBlockSyntax node(demo class) from
+                    //SyntaxTree using CompilationUnitSyntax which has to be compared
+                    var subject = root1.DescendantNodes()
+                              .OfType<MultiLineIfBlockSyntax>().FirstOrDefault();
+                    if (subject == null)
+                    {
+                        throw new EntryPointNotFoundException();
+                    }
+
+                    //Fethching the MultiLineIfBlockSyntax List of node from
+                    //SyntaxTree using CompilationUnitSyntax
+                    var removeList = root.DescendantNodes()
+                                 .OfType<MultiLineIfBlockSyntax>().ToList();
+
+                    if (removeList.Count == 0)
+                    {
+                        throw new EntryPointNotFoundException();
+                    }
+
+                    //Fethching the MultiLineIfBlockSyntax node from MultiLineIfBlockSyntax List
+                    // which has to be remove with help of node Subject by comparing
+                    //and removing node from SyntaxTree
+                    foreach (var item in removeList)
+                    {
+                        try
+                        {
+                            if (item.ToString() == subject.ToString())
+                            {
+                                root = root.RemoveNode(item, SyntaxRemoveOptions.KeepNoTrivia);
+                                break;
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine("Exception occurred: " + e);
+                        }
+                    }
+
+                }               
+                Console.WriteLine("-------------AFTER OPERATION-------------");
+                Console.WriteLine(root.GetText());
+                File.WriteAllText("Output1.txt", root.GetText().ToString());
+        }
+
+    }
+
+}
+
+
+
+
+using System;
+using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.IO;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using Microsoft.CodeAnalysis.VisualBasic;
+
+namespace ReplacingMethodUsingRolslynVB
+{
+    public static class Test
+    {
+        public static void Task1(string replaceMethod, string methodName)
+        {
+            try
+            {
+                if (replaceMethod == null || methodName == null)
+                {
+                    throw new ArgumentNullException(replaceMethod, methodName);
+                }
+
+                //Getting entire content of Sample file and store to string
+                string programText = File.ReadAllText(@"VB_ProgramSample.txt");
+
+                if (programText == null)
+                {
+                    throw new EntryPointNotFoundException();
+                }
+
+                //Creating SyntaxTree and getting CompilationUnitSyntax of SyntaxTree
+                SyntaxTree tree = VisualBasicSyntaxTree.ParseText(programText);
+                CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+
+                Console.WriteLine("--------------BEFORE OPERATION-------------------\n\n\n");
+                Console.WriteLine(root.GetText());
+
+                //Creating a demo class and inject input string 
+                string replacingMethod = @replaceMethod;
+                string programText1 = @Constants.demoClassContent1+"\n" + replacingMethod + "\n"+Constants.demoClassContent2;
+
+                //Creating SyntaxTree of Demo class and getting CompilationUnitSyntax of SyntaxTree
+                SyntaxTree tree1 = VisualBasicSyntaxTree.ParseText(programText1);
+                CompilationUnitSyntax root1 = tree1.GetCompilationUnitRoot();
+
+                //Fetching the method node from SyntaxTree(demo class) which we want to replace
+                MethodBlockSyntax mainDeclaration1 = root1.DescendantNodes()
+                .OfType<MethodBlockSyntax>()
+                .FirstOrDefault();
+
+                if (mainDeclaration1 == null)
+                {                 
+                    throw new EntryPointNotFoundException();
+                }
+
+                //Fethching the method node from SyntaxTree using CompilationUnitSyntax which has to be replaced
+                var mainDeclaration = root.DescendantNodes()
+                             //LHS fetching the identifier name from child node of 
+                             // MehtodBlockSyntax for comparision with given input
+                                     .OfType<MethodBlockSyntax>()
+                                     .Where(n => n.ChildNodes()
+                                     .OfType<MethodStatementSyntax>()
+                                     .FirstOrDefault().Identifier.ValueText 
+                                     ==
+                                     methodName).FirstOrDefault();
+                if (mainDeclaration == null)
+                {
+                    throw new EntryPointNotFoundException();
+                }
+
+                //Recompilation of ompilationUnitSyntax and getting the required node after compilation is done and SyntaxTree is updated.
+                root = root.TrackNodes(mainDeclaration);
+                SyntaxNode currentNode = root.GetCurrentNode(mainDeclaration);
+
+                root = root.ReplaceNode(currentNode, mainDeclaration1);
+                Console.WriteLine("--------------After OPERATION-------------------\n\n\n");
+                Console.WriteLine(root.GetText());
+                File.WriteAllText("Output.txt", root.GetText().ToString());
+                
+            }
+
+            catch (ArgumentNullException e)
+            {
+                Console.WriteLine("Argument can't be null: "+e);
+            }
+
+            catch(EntryPointNotFoundException e)
+            {
+                Console.WriteLine("Object value can't be null: "+e);
+            }
+
+            catch (Exception e)
+            {
+                Console.WriteLine("Exception Occured: " + e);
+            }
+
+        }
+
+    }
+}
+
+
+
